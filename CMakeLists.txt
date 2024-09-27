@@ -1,0 +1,23 @@
+cmake_minimum_required(VERSION 3.25,2)
+
+project(PMPP LANGUAGES CUDA CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CUDA_STANDARD 20)
+set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+
+set(SRC_LIST)
+add_subdirectory(src)
+add_subdirectory(apps)
+
+add_executable(PMPP ${SRC_LIST})
+target_link_libraries(${PROJECT_NAME} ${CUDA_LIBRARIES})
+set_property(TARGET PMPP PROPERTY CUDA_SEPARABLE_COMPILATION ON)
+
+message(STATUS ${CMAKE_CXX_COMPILER})
+message(STATUS ${CMAKE_CUDA_COMPILER})
+
+set_target_properties(PMPP PROPERTIES CUDA_ARCHITECTURES "89")
+set_property(TARGET PMPP PROPERTY CUDA_STANDARD 20)
+
