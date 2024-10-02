@@ -7,6 +7,7 @@ list(
   APPEND SRC_LIST
   "${dir}/Convolution.cpp"
   "${dir}/Convolution.cu"
+  "${dir}/ParallelScan.cu"
 )
 
 set(SRC_LIST "${SRC_LIST}" PARENT_SCOPE)
