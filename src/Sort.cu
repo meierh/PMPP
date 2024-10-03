@@ -1,9 +1,11 @@
 #include "Sort.hpp"
 
-template <typename TUINT, bool leadBitSign, std::uint8_t radixWidth, std::uint8_t radixSection>
+template <typename TUINT, std::uint8_t radixWidth>
 __device__ std::uint8_t toBucket
 (
-    TUINT value
+    TUINT value,
+    std::uint8_t radixSection,
+    bool leadBitSign
 )
 requires Arithmetic<TUINT> && IsUint<TUINT> && RadixWidth<TUINT,radixWidth>
 {
@@ -24,22 +26,58 @@ requires Arithmetic<TUINT> && IsUint<TUINT> && RadixWidth<TUINT,radixWidth>
     return maskedValue;    
 }
 
-template <typename TUINT, bool leadBitSign, std::size_t radixWidth, std::size_t BlockSize>
-__global__ void computeInsertionValue
+template <typename TUINT, std::size_t radixWidth>
+__global__ void computeBucketValue
 (
-    TUINT* data,
+    const TUINT* data,
     std::size_t dataLen,
-    std::uint64_t* d_perBucketInsertionValue,
-    std::uint8_t nbrBuckets,
-    std::uint8_t* d_toBucket,
-    TUINT* result
+    std::uint8_t radixSection,
+    bool leadBitSign,
+    std::uint8_t* d_toBucket
 )
 requires Arithmetic<TUINT> && IsUint<TUINT> && RadixWidth<TUINT,radixWidth>
+{
+    std::uint64_t tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if(tid<dataLen)
+    {
+        d_toBucket[tid] = toBucket<TUINT,leadBitSign,radixWidth>(data[tid],radixSection);
+    }
+}
+
+template <typename TUINT, std::size_t BlockSize, std::size_t BlockChunkSize>
+__global__ void computeMoveInfo
+(
+    const std::uint8_t* d_toBucket,
+    std::size_t dataLen,
+    std::uint64_t* d_perBucketInsertionValue,
+    std::uint8_t nbrBuckets
+)
+requires Arithmetic<TUINT> && IsUint<TUINT>
 {
     
 }
 
-template <typename T, std::size_t radixWidth, std::size_t BlockSize>
+template <typename TUINT>
+__global__ void moveValues
+(
+    const TUINT* d_preMovedData,
+    std::size_t dataLen,
+    const std::uint8_t* d_toBucket,
+    const std::uint64_t* d_perBucketInsertionValue,
+    TUINT* d_postMovedData
+)
+requires Arithmetic<TUINT> && IsUint<TUINT>
+{
+    std::uint64_t tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if(tid<dataLen)
+    {
+        std::uint8_t targetBucket = d_toBucket[tid];
+        std::uint64_t targetIndex = d_perBucketInsertionValue[targetBucket*dataLen+tid];
+        d_postMovedData[targetIndex] = d_preMovedData[tid];
+    }
+}
+
+template <typename T, std::size_t radixWidth, std::size_t BlockSize, std::size_t BlockChunkSize>
 void radixSort
 (
     const std::vector<T>& data,
@@ -52,24 +90,51 @@ requires Arithmetic<T>
     constexpr bool signedLead = signedLeadBit.leadBitSign;
     typedef typename ArithToUint<T>::type TUINT;
 
-    std::uint8_t nbrBuckets = 2;
-    for(std::uint8_t i=0; i<radixWidth-1; i++)
-        nbrBuckets *= 2;
+    constexpr std::uint8_t nbrBuckets = 1<<radixWidth;
     std::vector<std::uint64_t> perBucketInsertionVal(nbrBuckets*data.size());
+    
+    std::uint8_t nbrRadixSections = 8*sizeof(TUINT) / radixWidth;
 
     TUINT* d_data;
-    std::uint64_t* d_perBucketInsertionValue;
-    std::uint8_t* d_toBucket;
-    TUINT* d_result;
+    TUINT* d_data_cp;
     cudaMalloc((void**)&d_data,data.size()*sizeof(TUINT));
+    cudaMalloc((void**)&d_data_cp,data.size()*sizeof(TUINT));
+    cudaMemcpy(d_data,data.data(),data.size()*sizeof(TUINT),cudaMemcpyHostToDevice);
+    
+    std::uint8_t* d_toBucket;
+    cudaMalloc((void**)&d_toBucket,data.size()*sizeof(std::uint8_t));
+    
+    std::uint64_t* d_perBucketInsertionValue;
     cudaMalloc((void**)&d_perBucketInsertionValue,perBucketInsertionVal.size()*sizeof(std::uint64_t));
-    cudaMalloc((void**)&d_toBucket,d_data.size()*sizeof(std::uint8_t));
+    
+    TUINT* d_result;
     cudaMalloc((void**)&d_result,data.size()*sizeof(TUINT));
-
-    cudaMemcpy(d_data,data.data(),data.size()*sizeof(T),cudaMemcpyHostToDevice);
     
     std::size_t GridSize = ceil((float)data.size()/BlockSize);
     std::cout<<"BlockSize:"<<BlockSize<<" GridSize:"<<GridSize<<std::endl;
+    
+    bool leadRadix = false;
+    for(std::uint8_t radixSection=0; radixSection<nbrRadixSections; radixSection++)
+    {
+        if(signedLead)
+        {
+            if(radixSection==nbrRadixSections-1)
+                leadRadix = true;
+        }
+        computeBucketValue<TUINT,radixWidth>
+            <<<GridSize,BlockSize>>>(d_data,data.size(),radixSection,leadRadix,d_toBucket);
+        cudaDeviceSynchronize();
+        
+        computeInsertionValue<TUINT,BlockSize,BlockChunkSize>
+            <<<GridSize,BlockSize>>>(d_toBucket,data.size(),d_perBucketInsertionValue,nbrBuckets);
+        cudaDeviceSynchronize();
+        
+        moveValues<TUINT>
+            <<<GridSize,BlockSize>>>(d_data,data.size(),d_toBucket,d_perBucketInsertionValue,d_data_cp);
+        cudaDeviceSynchronize();
+        cudaMemcpy(d_data,d_data_cp,data.size()*sizeof(TUINT),cudaMemcpyDeviceToDevice);
+    }
+    
     radixSortStep<TUINT,signedLead,radixWidth,BlockSize><<<GridSize,BlockSize>>>(d_data,data.size(),d_result);
     
     result.resize(data.size());
