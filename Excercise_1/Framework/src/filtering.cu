@@ -5,7 +5,6 @@ unsigned int compute_dim(std::uint64_t global_size, int block_size)
 	return static_cast<unsigned int>((global_size / block_size) + (global_size % block_size > 0 ? 1 : 0));
 }
 
-
 __global__ void gray_scale_kernel(
 	std::uint32_t* dst_data,
 	std::uint32_t* src_data, 
@@ -22,14 +21,13 @@ __global__ void gray_scale_kernel(
 		unsigned char r = pixel & 0xff;
 		unsigned char g = (pixel >> 8) & 0xff;
 		unsigned char b = (pixel >> 16) & 0xff;
-		unsigned char gray = 0.2126*r+0.7152*g+0.0722*b;
-		r = g = b = gray;
-		std::uint32_t r_ = r;
-		pixel |= r_;
-		std::uint32_t g_ = g;
-		pixel |= g_ << 8;
-		std::uint32_t b_ = b;
-		pixel |= b_ << 16;
+		pixel = 0;
+		float gray = 0.2126*r+0.7152*g+0.0722*b;
+		unsigned char gray_Byte = gray;
+		std::uint32_t gray_4Byte = gray_Byte;
+		pixel |= gray_4Byte;
+		pixel |= gray_4Byte << 8;
+		pixel |= gray_4Byte << 16;
 		dst_data[arrIdx] = pixel;
 	}
 }
@@ -40,7 +38,6 @@ void to_grayscale(gpu_image& dst, gpu_image const& src)
 	dim3 grid_size = { compute_dim(src.width, block_size.x), compute_dim(src.height, block_size.y) };
 	gray_scale_kernel<<<grid_size, block_size>>>(dst.data.get(), src.data.get(), src.width, src.height);
 }
-
 
 __global__ void convolution_kernel(
 	std::uint32_t* dst_data,
@@ -122,35 +119,36 @@ __global__ void histogram_kernel(
 )
 {
 	//TODO: 1.5) Implement histogram computation
-	__shared__ std::uint32_t histo[num_bins][num_threads];
-	constexpr unsigned char binSpan = 256/num_bins;
-	for(int binI=0; binI<num_bins; binI++)
+	__shared__ std::uint32_t histo[num_threads][num_bins];
+	constexpr unsigned char binSpan = 8;//256/num_bins;
+	for(int threadI=0; threadI<num_threads; threadI++)
 	{
-		for(int threadI=0; threadI<num_threads; threadI++)
+		for(int binI=0; binI<num_bins; binI++)
 		{
-			histo[binI][threadI] = 0;
+			histo[threadI][binI] = 0;
 		}
 	}
 	
 	std::uint64_t totalLen = w*h;
 	std::uint64_t blockSlice = totalLen/gridDim.x + 1;
 	std::uint64_t totalOffset = blockIdx.x*blockSlice;
-	for(std::uint64_t localI=threadIdx.x; localI<blockSlice; localI+=num_threads)
+	for(std::uint64_t localI=threadIdx.x; localI<blockSlice && localI+totalOffset<totalLen; localI+=num_threads)
 	{
 		std::uint32_t pixel = img_data[localI+totalOffset];
-		unsigned char c = pixel << (8*(channel_flags-1));
-		uint channel = c;
-		uint ind = channel/binSpan;
-		histo[ind][threadIdx.x]++;
+		unsigned char color = (pixel >> (channel_flags-1)) & 0xff;
+		unsigned char binInd = color/binSpan;
+		histo[threadIdx.x][binInd] = histo[threadIdx.x][binInd]+1;
 	}
+	__syncthreads();
 	
 	for(int binI=threadIdx.x; binI<num_bins; binI+=num_threads)
 	{
 		for(int threadI=1; threadI<num_threads; threadI++)
 		{
-			histo[binI][0] += histo[binI][threadI];
+			histo[0][binI] += histo[threadI][binI];
 		}
 	}
+	__syncthreads();
 	
 	for(int binI=threadIdx.x; binI<num_bins; binI+=num_threads)
 	{

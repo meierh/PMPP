@@ -92,7 +92,7 @@ cpu_image load(std::string const& path)
 	if(path.empty())
 		throw std::runtime_error("Invalid filename");
 
-	std::ifstream is(path, std::ifstream::binary);
+	std::ifstream is(path, std::ifstream::binary);	
 	if(is.fail())
 		throw std::runtime_error("Could not open file");
 

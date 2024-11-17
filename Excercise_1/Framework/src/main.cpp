@@ -3,6 +3,8 @@
 #include "pointer.h"
 #include "filtering.h"
 
+std::string basePath = "/media/helge/Seagate4TB/Uni/Semester_23/PMPP/PMPP/Excercise_1/Framework/";
+
 gpu_image create_grayscale(gpu_image const& src)
 {
 	auto gray_gpu = make_gpu_image(src.width, src.height);
@@ -17,7 +19,7 @@ gpu_image create_grayscale(gpu_image const& src)
 
 	{
 		auto gray_cpu = to_cpu(gray_gpu);
-		save("out/cornell_grayscale.ppm", gray_cpu);
+		save(basePath+"out/cornell_grayscale.ppm", gray_cpu);
 	}
 	return gray_gpu;
 }
@@ -68,9 +70,9 @@ gpu_image create_edgedetect(gpu_image const& src, bool horizontal)
 	{
 		auto filtered_cpu = to_cpu(filtered_gpu);
 		if(horizontal)
-			save("out/cornell_filtered_h.ppm", filtered_cpu);
+			save(basePath+"out/cornell_filtered_h.ppm", filtered_cpu);
 		else
-			save("out/cornell_filtered_v.ppm", filtered_cpu);
+			save(basePath+"out/cornell_filtered_v.ppm", filtered_cpu);
 	}
 
 	return filtered_gpu;
@@ -101,7 +103,7 @@ gpu_image create_histogram(gpu_image const& img)
 
 	{
 		auto plot_cpu = to_cpu(plot_gpu);
-		save("out/cornell_hist.ppm", plot_cpu);
+		save(basePath+"out/cornell_hist.ppm", plot_cpu);
 	}
 
 #if 0
@@ -119,8 +121,8 @@ gpu_image create_histogram(gpu_image const& img)
 
 int main()
 {
-	cpu_image base_img = load("img/Cornell_Box_with_3_balls_of_different_materials.ppm");
-	save("out/cornell_unchanged.ppm", base_img);
+	cpu_image base_img = load(basePath+"img/Cornell_Box_with_3_balls_of_different_materials.ppm");
+	save(basePath+"out/cornell_unchanged.ppm", base_img);
 
 	auto base_gpu = to_gpu(base_img);
 	auto gray_gpu = create_grayscale(base_gpu);
