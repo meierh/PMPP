@@ -14,7 +14,6 @@ cpu_matrix<T> make_cpu_matrix(std::uint64_t width, std::uint64_t height)
 	img.height = height;
 	//TODO: 1.2a) Allocate host memory
 	img.data = make_managed_host_array<T>(width*height);
-	//img.data
 	return img;
 }
 
@@ -31,7 +30,6 @@ gpu_matrix<T> make_gpu_matrix(std::uint64_t width, std::uint64_t height)
 	//TODO: 1.2a) Allocate device memory
 	cudaError_t error;
 	img.data = make_managed_cuda_array<T>(width*height,cudaMemAttachGlobal,&error);
-	//img.data
 	return img;
 }
 
@@ -47,9 +45,11 @@ gpu_matrix<T> to_gpu(cpu_matrix<T> const& img)
 	cpy.height = img.height;
 	//TODO: 1.2b) Allocate and copy to device memory
 	cudaError_t error;
+//std::fprintf(stderr,"to gpu");
 	cpy.data = make_managed_cuda_array<T>(img.width*img.height,cudaMemAttachGlobal,&error);
+//std::fprintf(stderr,"to gpu alloc");
 	error = cudaMemcpy(cpy.data.get(),img.data.get(),img.width*img.height*sizeof(T),cudaMemcpyHostToDevice);
-	std::cout<<"Error: "<<cudaGetErrorName(error)<<"  --  "<<cudaGetErrorString(error)<<std::endl;
+//std::fprintf(stderr,"to gpu done");
 	return cpy;
 }
 
@@ -64,10 +64,10 @@ cpu_matrix<T> to_cpu(gpu_matrix<T> const& img)
 	cpy.width = img.width;
 	cpy.height = img.height;
 	//TODO: 1.2b) Allocate and copy to host memory
-	cudaError_t error;
 	cpy.data = make_managed_host_array<T>(img.width*img.height);
-	error = cudaMemcpy(cpy.data.get(),img.data.get(),img.width*img.height*sizeof(T),cudaMemcpyDeviceToHost);
-	std::cout<<"Error: "<<cudaGetErrorName(error)<<"  --  "<<cudaGetErrorString(error)<<std::endl;
+	cudaMemcpy(cpy.data.get(),img.data.get(),img.width*img.height*sizeof(T),cudaMemcpyDeviceToHost);
+//std::fprintf(stderr,"Error: ");
+//std::fprintf(stderr,"%.*s\n",(int)sizeof(cudaGetErrorName(error)),cudaGetErrorName(error));
 	return cpy;
 }
 
