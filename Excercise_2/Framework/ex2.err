@@ -1,0 +1,4 @@
+Lmod: unloading gcc 13.1.0 
+Lmod: unloading cuda 12.5 
+Lmod: loading cuda 12.5 
+Lmod: loading gcc 13.1.0 

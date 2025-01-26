@@ -1,0 +1,33 @@
+==PROF== Connected to process 846816 (/work/home/ru44wewy/PMPP/Excercise_2/Framework/build/pmpp_ex2_sol)
+==PROF== Profiling "scale_vectors_kernel" - 0: 0%....50%....100% - 20 passes
+==PROF== Profiling "scale_vectors_kernel_optimized" - 1: 0%....50%....100% - 20 passes
+test_scale<false> Avg error: 0.000000e+00
+test_scale<true> Avg error: 0.000000e+00
+==PROF== Disconnected from process 846816
+==PROF== Report: /work/home/ru44wewy/PMPP/Excercise_2/Framework/out/ex2_coalescing.ncu-rep
+==PROF== Connected to process 846879 (/work/home/ru44wewy/PMPP/Excercise_2/Framework/build/pmpp_ex2_sol)
+==PROF== Profiling "transpose_matrix_kernel" - 0: 0%....50%....100% - 20 passes
+==PROF== Profiling "transpose_matrix_kernel_optim..." - 1: 0%....50%....100% - 20 passes
+test_matrix_transpose<false> Avg error: 0.000000e+00
+test_matrix_transpose<true> Avg error: 0.000000e+00
+==PROF== Disconnected from process 846879
+==PROF== Report: /work/home/ru44wewy/PMPP/Excercise_2/Framework/out/ex2_conflicts.ncu-rep
+==PROF== Connected to process 846989 (/work/home/ru44wewy/PMPP/Excercise_2/Framework/build/pmpp_ex2_sol)
+==PROF== Profiling "compute_matrix_vector_product..." - 0: 0%....50%....100% - 20 passes
+==PROF== Profiling "compute_matrix_vector_product..." - 1: 0%....50%....100% - 20 passes
+test_matrix_vector_product<false> Avg error: 1.546666e-05
+test_matrix_vector_product<true> Avg error: 1.546666e-05
+==PROF== Disconnected from process 846989
+==PROF== Report: /work/home/ru44wewy/PMPP/Excercise_2/Framework/out/ex2_roofline.ncu-rep
+==PROF== Connected to process 847052 (/work/home/ru44wewy/PMPP/Excercise_2/Framework/build/pmpp_ex2_sol)
+==PROF== Profiling "cwise_op_vectors_kernel" - 0: 0%....50%....100% - 20 passes
+==PROF== Profiling "cwise_op_vectors_kernel_optim..." - 1: 0%....50%....100% - 20 passes
+test_cwise<false> Avg error: 1.158459e-07
+test_cwise<true> Avg error: 1.158459e-07
+==PROF== Disconnected from process 847052
+==PROF== Report: /work/home/ru44wewy/PMPP/Excercise_2/Framework/out/ex2_divergence.ncu-rep
+out/
+out/ex2_roofline.ncu-rep
+out/ex2_divergence.ncu-rep
+out/ex2_conflicts.ncu-rep
+out/ex2_coalescing.ncu-rep
