@@ -56,7 +56,7 @@ void cwise_op_vectors(gpu_matrix<float>& dst, gpu_matrix<float> const& src)
 
 void cwise_op_vectors_optimized(gpu_matrix<float>& dst, gpu_matrix<float> const& src)
 {
-	dim3 block_size = { vecs_per_block };
+	dim3 block_size = { 512 };
 	dim3 grid_size = { compute_dim(src.rows * src.cols, block_size.x) };
 	cwise_op_vectors_kernel_optimized<<<grid_size, block_size>>>(dst.data.get(), src.data.get(), src.rows);
 }

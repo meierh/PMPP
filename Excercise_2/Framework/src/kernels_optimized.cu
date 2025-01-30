@@ -23,7 +23,7 @@ __global__ void transpose_matrix_kernel_optimized(
 	std::uint64_t rows, std::uint64_t cols
 )
 {
-	__shared__ float tile[tilesize][tilesize+1];
+	__shared__ float tile[tilesize+1][tilesize];
 
 	auto c = tilesize * blockIdx.x + threadIdx.x;
 	auto r = tilesize * blockIdx.y + threadIdx.y;
@@ -95,24 +95,20 @@ __global__ void cwise_op_vectors_kernel_optimized(
 	std::uint64_t num_vecs
 )
 {
-	auto vec_idx = blockDim.x * blockIdx.x + threadIdx.x;
+	float4* dst_data_vec = (float4*) dst_data;
+	float4 const* src_data_vec = (float4 const*) src_data;
 
+	auto vec_idx = blockDim.x * blockIdx.x + threadIdx.x;
 	if(vec_idx < num_vecs)
 	{
-		float src_vector[dims_per_vec], dst_vector[dims_per_vec];
-		src_vector[0] = src_data[vec_idx*dims_per_vec+0];
-		src_vector[1] = src_data[vec_idx*dims_per_vec+1];
-		src_vector[2] = src_data[vec_idx*dims_per_vec+2];
-		src_vector[3] = src_data[vec_idx*dims_per_vec+3];
+		float4 src_vector = src_data_vec[vec_idx];
+		float4 dst_vector;
 		
-		dst_vector[0] = asinf(cosf(src_vector[0]-src_vector[1]));
-		dst_vector[1] = acosf(sinf(src_vector[1]+src_vector[0]));
-		dst_vector[2] = asinf(cosf(src_vector[2]*src_vector[3]));
-		dst_vector[3] = acosf(sinf(src_vector[3]*src_vector[3]));
+		dst_vector.x = asinf(cosf(src_vector.x-src_vector.y));
+		dst_vector.y = acosf(sinf(src_vector.y+src_vector.x));
+		dst_vector.z = asinf(cosf(src_vector.z*src_vector.w));
+		dst_vector.w = acosf(sinf(src_vector.w*src_vector.w));
 		
-		dst_data[vec_idx*dims_per_vec+0] = dst_vector[0];
-		dst_data[vec_idx*dims_per_vec+1] = dst_vector[1];
-		dst_data[vec_idx*dims_per_vec+2] = dst_vector[2];
-		dst_data[vec_idx*dims_per_vec+3] = dst_vector[3];
+		dst_data_vec[vec_idx] = dst_vector;
 	}
 }
