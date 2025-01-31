@@ -52,12 +52,16 @@ __global__ void transpose_matrix_kernel_optimized(
 	std::uint64_t rows, std::uint64_t cols
 );
 
+constexpr int tilesize_matrix_vec = 32;
 __global__ void compute_matrix_vector_product_kernel(
 	float* dst_data,
 	float const* src_data,
 	std::uint64_t rows, std::uint64_t cols,
 	float const* v_data
 );
+
+constexpr int tilesizeX_matrix_vec = 128;
+constexpr int tilesizeY_matrix_vec = 1;
 __global__ void compute_matrix_vector_product_kernel_optimized(
 	float* dst_data,
 	float const* src_data,

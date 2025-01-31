@@ -234,6 +234,11 @@ int main(int argc, char ** argv)
 
 	if(task[2])
 	{
+		/*
+		numrows = 10; numcols = 10;
+		verbose = true;
+		*/
+		
 		auto mat = generate_matrix(numrows, numcols);
 		auto vec = generate_vector(mat.cols);
 		auto ref = make_cpu_matrix<float>(mat.rows, 1);

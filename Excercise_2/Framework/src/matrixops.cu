@@ -14,8 +14,8 @@ void scale_vectors(gpu_matrix<float>& dst, gpu_matrix<float> const& src, float a
 
 void scale_vectors_optimized(gpu_matrix<float>& dst, gpu_matrix<float> const& src, float a)
 {
-	dim3 block_size = { 64 };
-	dim3 grid_size = { compute_dim(src.rows, block_size.x) };
+	dim3 block_size = { 256 };
+	dim3 grid_size = { compute_dim(src.rows*src.cols, block_size.x) };
 	scale_vectors_kernel_optimized<<<grid_size, block_size>>>(dst.data.get(), src.data.get(), src.rows, src.cols, a);
 }
 
@@ -35,15 +35,20 @@ void transpose_matrix_optimized(gpu_matrix<float>& dst, gpu_matrix<float> const&
 
 void compute_matrix_vector_product(gpu_matrix<float>& dst, gpu_matrix<float> const& m, gpu_matrix<float> const& v)
 {
-	const dim3 block_size = { tilesize };
+	const dim3 block_size = { tilesize_matrix_vec };
 	dim3 grid_size = { compute_dim(m.rows, block_size.x) };
 	compute_matrix_vector_product_kernel<<<grid_size, block_size>>>(dst.data.get(), m.data.get(), m.rows, m.cols, v.data.get());
 }
 
+#include <iostream>
 void compute_matrix_vector_product_optimized(gpu_matrix<float>& dst, gpu_matrix<float> const& m, gpu_matrix<float> const& v)
 {
-	const dim3 block_size = { tilesize };
-	dim3 grid_size = { compute_dim(m.rows, block_size.x) };
+	const dim3 block_size = {tilesizeX_matrix_vec, tilesizeY_matrix_vec};
+	dim3 grid_size = {compute_dim(m.cols,block_size.x), compute_dim(m.rows,block_size.y)};
+	std::cout<<"m dims cols:"<<m.cols<<" rows:"<<m.rows<<std::endl;
+	std::cout<<"block_size ("<<block_size.x<<","<<block_size.y<<")"<<std::endl;
+	std::cout<<"grid_size ("<<grid_size.x<<","<<grid_size.y<<")"<<std::endl;
+	cudaMemset(dst.data.get(),0,m.rows*sizeof(float));
 	compute_matrix_vector_product_kernel_optimized<<<grid_size, block_size>>>(dst.data.get(), m.data.get(), m.rows, m.cols, v.data.get());
 }
 
@@ -56,7 +61,7 @@ void cwise_op_vectors(gpu_matrix<float>& dst, gpu_matrix<float> const& src)
 
 void cwise_op_vectors_optimized(gpu_matrix<float>& dst, gpu_matrix<float> const& src)
 {
-	dim3 block_size = { 512 };
+	dim3 block_size = { 1024 };
 	dim3 grid_size = { compute_dim(src.rows * src.cols, block_size.x) };
 	cwise_op_vectors_kernel_optimized<<<grid_size, block_size>>>(dst.data.get(), src.data.get(), src.rows);
 }
